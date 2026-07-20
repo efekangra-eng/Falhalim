@@ -12,28 +12,32 @@
   "background_color": "#6b21a8",
   "icons": [
     {
-      "src": "/icon-192-v2.png",
-      "sizes": "192x192",
-      "type": "image/png",
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/icon-192-v2.png",
-      "sizes": "192x192",
-      "type": "image/png",
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
       "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-desktop.svg",
+      "sizes": "1280x720",
+      "type": "image/svg+xml",
+      "form_factor": "wide",
+      "label": "Kahve Falı Desktop"
     },
     {
-      "src": "/icon-512-v2.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon-512-v2.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
+      "src": "/screenshot-mobile.svg",
+      "sizes": "720x1280",
+      "type": "image/svg+xml",
+      "form_factor": "narrow",
+      "label": "Kahve Falı Mobile"
     }
   ],
   "categories": ["lifestyle", "entertainment"],
@@ -41,7 +45,7 @@
     {
       "name": "Yeni Fal Bak",
       "url": "/?utm_source=pwa",
-      "icons": [{ "src": "/icon-192-v2.png", "sizes": "192x192", "type": "image/png" }]
+      "icons": [{ "src": "/icon.svg", "sizes": "192x192 512x512", "type": "image/svg+xml" }]
     }
   ]
 }

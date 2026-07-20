@@ -1,11 +1,12 @@
-const CACHE_NAME = 'kahve-fali-cache-v7';
+const CACHE_NAME = 'kahve-fali-cache-v8';
 const urlsToCache = [
   '/',
   '/?utm_source=pwa',
   '/index.html',
   '/manifest.json',
-  '/icon-192-v2.png',
-  '/icon-512-v2.png'
+  '/icon.svg',
+  '/screenshot-desktop.svg',
+  '/screenshot-mobile.svg'
 ];
 
 self.addEventListener('install', event => {
