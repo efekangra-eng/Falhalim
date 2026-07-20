@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Coffee, Bookmark, Home as HomeIcon, Sparkles, Trash2 } from 'lucide-react';
+import { Coffee, Bookmark, Home as HomeIcon, Sparkles, Trash2, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface Fortune {
@@ -27,6 +27,31 @@ export default function App() {
   const [currentFortune, setCurrentFortune] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [savedFortunes, setSavedFortunes] = useState<Fortune[]>([]);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstallable, setIsInstallable] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      // Prevent Chrome 67 and earlier from automatically showing the prompt
+      e.preventDefault();
+      // Stash the event so it can be triggered later.
+      setDeferredPrompt(e);
+      // Update UI notify the user they can add to home screen
+      setIsInstallable(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    window.addEventListener('appinstalled', () => {
+      setIsInstallable(false);
+      setDeferredPrompt(null);
+      console.log('PWA was installed');
+    });
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
 
   useEffect(() => {
     const saved = localStorage.getItem('kahve-fali-saved');
@@ -73,6 +98,21 @@ export default function App() {
     saveToStorage(savedFortunes.filter(f => f.id !== id));
   };
 
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    
+    // Show the install prompt
+    deferredPrompt.prompt();
+    
+    // Wait for the user to respond to the prompt
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`User response to the install prompt: ${outcome}`);
+    
+    // We've used the prompt, and can't use it again, throw it away
+    setDeferredPrompt(null);
+    setIsInstallable(false);
+  };
+
   return (
     <div className="flex-1 w-full h-full flex flex-col items-center bg-gray-50 relative pb-28">
       {/* Header */}
@@ -81,6 +121,15 @@ export default function App() {
           <Sparkles className="w-6 h-6 text-purple-600" />
           Falım
         </h1>
+        {isInstallable && (
+          <button
+            onClick={handleInstallClick}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white text-sm font-medium rounded-full shadow-sm hover:bg-purple-700 transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            Yükle
+          </button>
+        )}
       </header>
 
       {/* Main Content Area */}
