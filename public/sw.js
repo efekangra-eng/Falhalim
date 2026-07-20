@@ -1,7 +1,6 @@
-const CACHE_NAME = 'kahve-fali-cache-v2';
+const CACHE_NAME = 'kahve-fali-cache-v4';
 const urlsToCache = [
   '/',
-  '/?utm_source=pwa',
   '/index.html',
   '/manifest.json',
   '/icon-192.png',
@@ -38,25 +37,24 @@ self.addEventListener('fetch', event => {
         if (response) {
           return response;
         }
-        return fetch(event.request).then(
-          function(response) {
-            // Only cache valid basic responses
-            if(!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
-            var responseToCache = response.clone();
-            caches.open(CACHE_NAME)
-              .then(function(cache) {
-                cache.put(event.request, responseToCache);
-              });
-            return response;
+        return fetch(event.request).then(networkResponse => {
+          // Only cache valid basic responses
+          if(!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+            return networkResponse;
           }
-        );
-      }).catch(() => {
-        // Fallback for offline mode if the resource is not in cache
-        if (event.request.mode === 'navigate') {
-          return caches.match('/index.html');
-        }
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME)
+            .then(cache => {
+              cache.put(event.request, responseToCache);
+            });
+          return networkResponse;
+        }).catch(error => {
+          // Fallback for offline mode if the resource is not in cache
+          if (event.request.mode === 'navigate') {
+            return caches.match('/index.html');
+          }
+          throw error;
+        });
       })
   );
 });

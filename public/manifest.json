@@ -1,9 +1,9 @@
 {
   "id": "/",
-  "name": "Kahve Falı",
+  "name": "Kahve Falı PWA",
   "short_name": "Falım",
   "description": "Günlük kahve falı yorumlarınızı alın ve kaydedin.",
-  "start_url": "/?utm_source=pwa",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "display_override": ["fullscreen", "minimal-ui"],
@@ -15,32 +15,20 @@
       "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     }
   ],
   "categories": ["lifestyle", "entertainment"],
   "shortcuts": [
     {
       "name": "Yeni Fal Bak",
-      "url": "/?action=new",
+      "url": "/",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]
