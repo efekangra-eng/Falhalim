@@ -1,0 +1,10 @@
+# .htaccess for TWA/PWA (Assetlinks)
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+</IfModule>
+
+<IfModule mod_headers.c>
+  <FilesMatch "assetlinks\.json$">
+    Header set Content-Type "application/json"
+  </FilesMatch>
+</IfModule>

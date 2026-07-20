@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* Prevents pull-to-refresh and native overscroll */
+  user-select: none;
+  -webkit-user-select: none;
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+  background-color: #ffffff;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  /* Support for display cutouts (notches) */
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+  box-sizing: border-box;
+  position: relative;
+}
+
+.glass-nav {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 -4px 32px rgba(107, 33, 168, 0.1);
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
