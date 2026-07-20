@@ -1,6 +1,7 @@
-const CACHE_NAME = 'kahve-fali-cache-v4';
+const CACHE_NAME = 'kahve-fali-cache-v6';
 const urlsToCache = [
   '/',
+  '/?utm_source=pwa',
   '/index.html',
   '/manifest.json',
   '/icon-192.png',
@@ -8,11 +9,18 @@ const urlsToCache = [
 ];
 
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(urlsToCache))
-  );
   self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(async (cache) => {
+      for (const url of urlsToCache) {
+        try {
+          await cache.add(url);
+        } catch (e) {
+          console.warn('SW cache add failed for:', url, e);
+        }
+      }
+    })
+  );
 });
 
 self.addEventListener('activate', event => {
@@ -31,30 +39,33 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
+  if (event.request.method !== 'GET') return;
+
   event.respondWith(
-    caches.match(event.request)
+    fetch(event.request)
       .then(response => {
-        if (response) {
-          return response;
+        // Cache the latest version if successful
+        if (response && response.status === 200 && response.type === 'basic') {
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, responseToCache);
+          });
         }
-        return fetch(event.request).then(networkResponse => {
-          // Only cache valid basic responses
-          if(!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-            return networkResponse;
-          }
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME)
-            .then(cache => {
-              cache.put(event.request, responseToCache);
-            });
-          return networkResponse;
-        }).catch(error => {
-          // Fallback for offline mode if the resource is not in cache
-          if (event.request.mode === 'navigate') {
-            return caches.match('/index.html');
-          }
-          throw error;
-        });
+        return response;
+      })
+      .catch(async () => {
+        // Offline fallback
+        const cache = await caches.open(CACHE_NAME);
+        const cachedResponse = await cache.match(event.request);
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        // If it's a navigation request and not in cache, return index.html or root
+        if (event.request.mode === 'navigate') {
+          return (await cache.match('/?utm_source=pwa')) || 
+                 (await cache.match('/')) || 
+                 (await cache.match('/index.html'));
+        }
       })
   );
 });
