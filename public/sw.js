@@ -1,10 +1,12 @@
-const CACHE_NAME = 'kahve-fali-cache-v8';
+const CACHE_NAME = 'kahve-fali-cache-v9';
 const urlsToCache = [
   '/',
   '/?utm_source=pwa',
   '/index.html',
   '/manifest.json',
   '/icon.svg',
+  '/icon-192.png',
+  '/icon-512.png',
   '/screenshot-desktop.svg',
   '/screenshot-mobile.svg'
 ];
