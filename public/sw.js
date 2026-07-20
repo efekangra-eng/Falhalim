@@ -1,6 +1,7 @@
-const CACHE_NAME = 'kahve-fali-cache-v1';
+const CACHE_NAME = 'kahve-fali-cache-v2';
 const urlsToCache = [
   '/',
+  '/?utm_source=pwa',
   '/index.html',
   '/manifest.json',
   '/icon-192.png',

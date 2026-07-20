@@ -29,8 +29,15 @@ export default function App() {
   const [savedFortunes, setSavedFortunes] = useState<Fortune[]>([]);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
+  const [showInstallModal, setShowInstallModal] = useState(false);
 
   useEffect(() => {
+    // Check if already installed
+    if (window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true) {
+      setIsStandalone(true);
+    }
+
     const handleBeforeInstallPrompt = (e: any) => {
       // Prevent Chrome 67 and earlier from automatically showing the prompt
       e.preventDefault();
@@ -45,6 +52,8 @@ export default function App() {
     window.addEventListener('appinstalled', () => {
       setIsInstallable(false);
       setDeferredPrompt(null);
+      setIsStandalone(true);
+      setShowInstallModal(false);
       console.log('PWA was installed');
     });
 
@@ -99,29 +108,32 @@ export default function App() {
   };
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-    
-    // Show the install prompt
-    deferredPrompt.prompt();
-    
-    // Wait for the user to respond to the prompt
-    const { outcome } = await deferredPrompt.userChoice;
-    console.log(`User response to the install prompt: ${outcome}`);
-    
-    // We've used the prompt, and can't use it again, throw it away
-    setDeferredPrompt(null);
-    setIsInstallable(false);
+    if (deferredPrompt) {
+      // Show the install prompt
+      deferredPrompt.prompt();
+      
+      // Wait for the user to respond to the prompt
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`User response to the install prompt: ${outcome}`);
+      
+      // We've used the prompt, and can't use it again, throw it away
+      setDeferredPrompt(null);
+      setIsInstallable(false);
+    } else {
+      // Fallback for iOS or if running in iframe where beforeinstallprompt doesn't fire
+      setShowInstallModal(true);
+    }
   };
 
   return (
     <div className="flex-1 w-full h-full flex flex-col items-center bg-gray-50 relative pb-28">
       {/* Header */}
-      <header className="w-full max-w-md mx-auto pt-8 pb-4 px-6 flex items-center justify-between">
+      <header className="w-full max-w-md mx-auto pt-8 pb-4 px-6 flex items-center justify-between z-10 relative">
         <h1 className="text-2xl font-bold text-purple-900 tracking-tight flex items-center gap-2">
           <Sparkles className="w-6 h-6 text-purple-600" />
           Falım
         </h1>
-        {isInstallable && (
+        {!isStandalone && (
           <button
             onClick={handleInstallClick}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white text-sm font-medium rounded-full shadow-sm hover:bg-purple-700 transition-colors"
@@ -131,6 +143,46 @@ export default function App() {
           </button>
         )}
       </header>
+
+      {/* Install Modal Fallback */}
+      <AnimatePresence>
+        {showInstallModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+            onClick={() => setShowInstallModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-3xl p-6 shadow-xl w-full max-w-sm border border-purple-100 flex flex-col items-center text-center gap-4"
+            >
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 mb-2">
+                <Download className="w-8 h-8" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">Ana Ekrana Ekle</h3>
+              <p className="text-gray-600 text-sm leading-relaxed">
+                Uygulamayı cihazınıza yüklemek için:
+              </p>
+              <ul className="text-sm text-left text-gray-600 space-y-2 bg-gray-50 p-4 rounded-xl w-full">
+                <li><strong className="text-gray-800">🍎 iOS (Safari):</strong> Alt menüdeki <span className="inline-block border rounded px-1">Paylaş</span> butonuna basın ve <strong>"Ana Ekrana Ekle"</strong> seçeneğini seçin.</li>
+                <li><strong className="text-gray-800">🤖 Android (Chrome):</strong> Tarayıcı menüsünden <strong>"Ana Ekrana Ekle"</strong> seçeneğini seçin.</li>
+                <li><strong className="text-gray-800">⚠️ Not:</strong> AI Studio önizleme penceresindeyseniz, önce uygulamayı <strong>yeni bir sekmede açmalısınız.</strong></li>
+              </ul>
+              <button
+                onClick={() => setShowInstallModal(false)}
+                className="mt-2 w-full py-3 bg-purple-600 text-white font-medium rounded-xl hover:bg-purple-700 transition-colors"
+              >
+                Anladım
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Main Content Area */}
       <main className="flex-1 w-full max-w-md mx-auto overflow-y-auto hide-scrollbar px-6 flex flex-col">
