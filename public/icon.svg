@@ -1,7 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#6b21a8"/>
-  <path d="M156 180h200v120c0 55.2-44.8 100-100 100s-100-44.8-100-100V180zm210 20h30c22.1 0 40 17.9 40 40s-17.9 40-40 40h-23.7" fill="none" stroke="#ffffff" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M190 120l10-30 10 30 30 10-30 10-10 30-10-30-30-10 30-10z" fill="#ffffff"/>
-  <path d="M256 90l10-30 10 30 30 10-30 10-10 30-10-30-30-10 30-10z" fill="#ffffff"/>
-  <path d="M322 120l10-30 10 30 30 10-30 10-10 30-10-30-30-10 30-10z" fill="#ffffff"/>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7e22ce" />
+      <stop offset="100%" stop-color="#4c1d95" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)" />
+  <circle cx="256" cy="256" r="204.8" fill="#ffffff" />
+  <text x="256" y="271" font-family="system-ui, sans-serif" font-weight="bold" font-size="256" fill="#6b21a8" text-anchor="middle" dominant-baseline="middle">F</text>
 </svg>

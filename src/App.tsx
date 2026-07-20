@@ -1,10 +1,5 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React, { useState, useEffect } from 'react';
-import { Coffee, Bookmark, Home as HomeIcon, Sparkles, Trash2, Download } from 'lucide-react';
+import { Coffee, Bookmark, Home as HomeIcon, Sparkles, Trash2, Download, Info, WifiOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface Fortune {
@@ -30,21 +25,34 @@ export default function App() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
-  const [showInstallModal, setShowInstallModal] = useState(false);
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
   useEffect(() => {
-    // Check if already installed
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  useEffect(() => {
     if (window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true) {
       setIsStandalone(true);
     }
 
     const handleBeforeInstallPrompt = (e: any) => {
-      // Prevent Chrome 67 and earlier from automatically showing the prompt
       e.preventDefault();
-      // Stash the event so it can be triggered later.
       setDeferredPrompt(e);
-      // Update UI notify the user they can add to home screen
       setIsInstallable(true);
+      
+      // Auto-show the beautiful install banner if not installed
+      if (!sessionStorage.getItem('installPromptDismissed')) {
+        setTimeout(() => setShowInstallPrompt(true), 1500);
+      }
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -53,13 +61,10 @@ export default function App() {
       setIsInstallable(false);
       setDeferredPrompt(null);
       setIsStandalone(true);
-      setShowInstallModal(false);
-      console.log('PWA was installed');
+      setShowInstallPrompt(false);
     });
 
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
   }, []);
 
   useEffect(() => {
@@ -90,8 +95,7 @@ export default function App() {
 
   const handleSaveCurrent = () => {
     if (!currentFortune) return;
-    const isAlreadySaved = savedFortunes.some(f => f.text === currentFortune);
-    if (isAlreadySaved) return;
+    if (savedFortunes.some(f => f.text === currentFortune)) return;
 
     const newFortune: Fortune = {
       id: Date.now().toString(),
@@ -111,161 +115,138 @@ export default function App() {
 
   const handleInstallClick = async () => {
     if (deferredPrompt && !inIframe) {
-      // Show the install prompt
       deferredPrompt.prompt();
-      
-      // Wait for the user to respond to the prompt
       const { outcome } = await deferredPrompt.userChoice;
-      console.log(`User response to the install prompt: ${outcome}`);
-      
-      // We've used the prompt, and can't use it again, throw it away
-      setDeferredPrompt(null);
-      setIsInstallable(false);
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+        setIsInstallable(false);
+      }
+      setShowInstallPrompt(false);
     } else {
-      // Fallback for iOS or if running in iframe where beforeinstallprompt doesn't fire
-      setShowInstallModal(true);
+      // If we cannot prompt directly (iOS Safari or iframe)
+      if (inIframe) {
+        alert("Lütfen önce uygulamayı yeni sekmede açın (sağ üst menüden).");
+      } else {
+        alert("Tarayıcınızın Paylaş butonuna tıklayıp 'Ana Ekrana Ekle' seçeneğini kullanarak yükleyebilirsiniz.");
+      }
     }
   };
 
+  const dismissInstallPrompt = () => {
+    setShowInstallPrompt(false);
+    sessionStorage.setItem('installPromptDismissed', 'true');
+  };
+
   return (
-    <div className="flex-1 w-full h-full flex flex-col items-center bg-gray-50 relative pb-28">
-      {/* Header */}
-      <header className="w-full max-w-md mx-auto pt-8 pb-4 px-6 flex items-center justify-between z-10 relative">
-        <h1 className="text-2xl font-bold text-purple-900 tracking-tight flex items-center gap-2">
-          <Sparkles className="w-6 h-6 text-purple-600" />
-          Falım
-        </h1>
-        {!isStandalone && (
-          <button
-            onClick={handleInstallClick}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white text-sm font-medium rounded-full shadow-sm hover:bg-purple-700 transition-colors"
-          >
-            <Download className="w-4 h-4" />
-            Yükle
-          </button>
-        )}
-      </header>
-
-      {/* Install Modal Fallback */}
+    <div className="flex-1 w-full h-[100dvh] flex flex-col items-center bg-gray-50 relative overflow-hidden text-slate-800">
+      
+      {/* Offline Banner */}
       <AnimatePresence>
-        {showInstallModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-            onClick={() => setShowInstallModal(false)}
+        {isOffline && (
+          <motion.div 
+            initial={{ y: -50, opacity: 0 }} 
+            animate={{ y: 0, opacity: 1 }} 
+            exit={{ y: -50, opacity: 0 }}
+            className="absolute top-[env(safe-area-inset-top)] left-0 right-0 z-50 bg-rose-500 text-white text-xs font-medium py-1.5 flex justify-center items-center gap-2 shadow-md"
           >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-3xl p-6 shadow-xl w-full max-w-sm border border-purple-100 flex flex-col items-center text-center gap-4"
-            >
-              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 mb-2">
-                <Download className="w-8 h-8" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900">Ana Ekrana Ekle</h3>
-              
-              {inIframe ? (
-                <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl text-sm text-left">
-                  <p className="font-semibold mb-2">⚠️ Önce tam ekrana geçin</p>
-                  <p>AI Studio önizlemesindeyken uygulama yüklenemez. Lütfen sağ üstteki <strong>"Yeni Sekmede Aç" (Open in new tab)</strong> veya <strong>"Paylaş" (Share)</strong> butonuna tıklayarak uygulamayı tarayıcıda tam sayfa olarak açın.</p>
-                </div>
-              ) : (
-                <>
-                  <p className="text-gray-600 text-sm leading-relaxed">
-                    Uygulamayı cihazınıza yüklemek için:
-                  </p>
-                  <ul className="text-sm text-left text-gray-600 space-y-2 bg-gray-50 p-4 rounded-xl w-full">
-                    <li><strong className="text-gray-800">🍎 iOS (Safari):</strong> Alt menüdeki <span className="inline-block border border-gray-300 rounded px-1">Paylaş</span> butonuna basın ve <strong>"Ana Ekrana Ekle"</strong> seçeneğini seçin.</li>
-                    <li><strong className="text-gray-800">🤖 Android (Chrome):</strong> Tarayıcı menüsünden (üç nokta) <strong>"Ana Ekrana Ekle"</strong> veya <strong>"Uygulamayı Yükle"</strong> seçeneğini seçin.</li>
-                  </ul>
-                </>
-              )}
-
-              <button
-                onClick={() => setShowInstallModal(false)}
-                className="mt-2 w-full py-3 bg-purple-600 text-white font-medium rounded-xl hover:bg-purple-700 transition-colors"
-              >
-                Anladım
-              </button>
-            </motion.div>
+            <WifiOff className="w-3 h-3" />
+            İnternet bağlantısı yok (Çevrimdışı Mod)
           </motion.div>
         )}
       </AnimatePresence>
 
+      {/* Header */}
+      <header className="w-full max-w-md mx-auto pt-8 pb-6 px-6 flex items-center justify-between z-10 shrink-0 mt-[env(safe-area-inset-top)]">
+        <div className="flex flex-col">
+          <h1 className="text-2xl font-bold text-purple-950 tracking-tight flex items-center gap-2">
+            <Sparkles className="w-6 h-6 text-purple-600" />
+            Falım
+          </h1>
+          <p className="text-sm font-medium text-purple-600/70 mt-0.5">Sanal Kahve Falı</p>
+        </div>
+        
+        {/* Manual Install Button if not standalone */}
+        {!isStandalone && !showInstallPrompt && (
+          <motion.button
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            onClick={() => setShowInstallPrompt(true)}
+            className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-700 hover:bg-purple-200 transition-colors"
+          >
+            <Download className="w-5 h-5" />
+          </motion.button>
+        )}
+      </header>
+
       {/* Main Content Area */}
-      <main className="flex-1 w-full max-w-md mx-auto overflow-y-auto hide-scrollbar px-6 flex flex-col">
+      <main className="flex-1 w-full max-w-md mx-auto overflow-y-auto hide-scrollbar px-6 flex flex-col relative pb-32">
         <AnimatePresence mode="wait">
           {activeTab === 'home' ? (
             <motion.div
               key="home"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="flex-1 flex flex-col items-center justify-center space-y-8"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="flex-1 flex flex-col items-center justify-center min-h-[50vh]"
             >
-              {/* Main Cup Action */}
               <div className="relative">
                 <motion.button
                   onClick={generateFortune}
-                  disabled={isGenerating}
-                  whileTap={{ scale: 0.95 }}
-                  className={`w-40 h-40 rounded-full flex items-center justify-center shadow-xl transition-colors ${
-                    isGenerating ? 'bg-purple-100 text-purple-400' : 'bg-white text-purple-600 hover:bg-purple-50'
+                  disabled={isGenerating || isOffline}
+                  whileTap={{ scale: 0.92 }}
+                  className={`w-44 h-44 rounded-full flex items-center justify-center shadow-2xl transition-colors relative z-10 ${
+                    isGenerating ? 'bg-purple-100 text-purple-400' : 
+                    isOffline ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white text-purple-600 hover:bg-purple-50'
                   }`}
                 >
                   <motion.div
                     animate={isGenerating ? { rotate: [0, -10, 10, -10, 10, 0], scale: [1, 1.1, 1] } : {}}
                     transition={{ repeat: isGenerating ? Infinity : 0, duration: 1 }}
                   >
-                    <Coffee className="w-16 h-16" strokeWidth={1.5} />
+                    <Coffee className="w-20 h-20" strokeWidth={1.5} />
                   </motion.div>
                 </motion.button>
-                {/* Decorative rings */}
-                <div className="absolute inset-0 border-2 border-purple-200 rounded-full scale-[1.15] -z-10 opacity-50" />
-                <div className="absolute inset-0 border border-purple-100 rounded-full scale-[1.3] -z-10 opacity-30" />
+                <div className="absolute inset-0 border-[3px] border-purple-200 rounded-full scale-[1.12] -z-10 opacity-60" />
+                <div className="absolute inset-0 border border-purple-100 rounded-full scale-[1.28] -z-10 opacity-30" />
               </div>
 
-              {/* Status / Instruction */}
-              {!currentFortune && !isGenerating && (
-                <p className="text-gray-500 text-center font-medium">
-                  Fincanı çevirmek için dokun
-                </p>
-              )}
-
-              {isGenerating && (
-                <p className="text-purple-600 text-center font-medium animate-pulse">
-                  Fincanın soğuyor, telveler şekilleniyor...
-                </p>
-              )}
-
-              {/* Fortune Result */}
-              <AnimatePresence>
-                {currentFortune && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="w-full bg-white rounded-3xl p-6 shadow-sm border border-purple-100 flex flex-col items-center gap-4 mt-4"
-                  >
-                    <p className="text-gray-700 leading-relaxed text-center">
-                      "{currentFortune}"
-                    </p>
-                    
-                    <button
-                      onClick={handleSaveCurrent}
-                      disabled={savedFortunes.some(f => f.text === currentFortune)}
-                      className="mt-2 px-6 py-2.5 rounded-full bg-purple-100 text-purple-700 font-medium flex items-center gap-2 hover:bg-purple-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Bookmark className="w-4 h-4" />
-                      {savedFortunes.some(f => f.text === currentFortune) ? 'Kaydedildi' : 'Falı Kaydet'}
-                    </button>
-                  </motion.div>
+              <div className="mt-12 h-32 w-full max-w-sm">
+                {!currentFortune && !isGenerating && (
+                  <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-slate-500 text-center font-medium">
+                    {isOffline ? "Fal bakmak için internet bağlantısı gerekiyor." : "Fincanı çevirmek için dokun"}
+                  </motion.p>
                 )}
-              </AnimatePresence>
 
+                {isGenerating && (
+                  <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-purple-600 text-center font-medium animate-pulse">
+                    Fincanın soğuyor, telveler şekilleniyor...
+                  </motion.p>
+                )}
+
+                <AnimatePresence>
+                  {currentFortune && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="w-full bg-white rounded-3xl p-6 shadow-sm border border-purple-100/50 flex flex-col items-center gap-5"
+                    >
+                      <p className="text-slate-700 leading-relaxed text-center font-medium">
+                        "{currentFortune}"
+                      </p>
+                      
+                      <button
+                        onClick={handleSaveCurrent}
+                        disabled={savedFortunes.some(f => f.text === currentFortune)}
+                        className="px-6 py-2.5 rounded-full bg-purple-50 text-purple-700 font-bold text-sm flex items-center gap-2 hover:bg-purple-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Bookmark className="w-4 h-4" />
+                        {savedFortunes.some(f => f.text === currentFortune) ? 'Kaydedildi' : 'Falı Kaydet'}
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </motion.div>
           ) : (
             <motion.div
@@ -273,14 +254,15 @@ export default function App() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="flex-1 flex flex-col w-full pb-8"
+              transition={{ duration: 0.2 }}
+              className="flex-1 flex flex-col w-full"
             >
-              <h2 className="text-lg font-semibold text-gray-800 mb-4 px-2">Kaydedilen Fallar</h2>
+              <h2 className="text-xl font-bold text-slate-800 mb-6 px-1">Kaydedilen Fallar</h2>
               
               {savedFortunes.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center text-gray-400 gap-3">
-                  <Bookmark className="w-12 h-12 opacity-20" />
-                  <p>Henüz kaydedilmiş falınız yok.</p>
+                <div className="flex-1 flex flex-col items-center justify-center text-slate-400 gap-4 mt-12">
+                  <Bookmark className="w-16 h-16 opacity-20" />
+                  <p className="font-medium text-slate-500">Henüz kaydedilmiş falınız yok.</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -288,23 +270,23 @@ export default function App() {
                     {savedFortunes.map((fortune) => (
                       <motion.div
                         key={fortune.id}
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative group"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9, height: 0, marginTop: 0, marginBottom: 0, overflow: 'hidden' }}
+                        className="bg-white rounded-3xl p-5 shadow-sm border border-slate-100/60 relative"
                       >
-                        <div className="flex justify-between items-start mb-2">
-                          <span className="text-xs font-medium text-purple-500 bg-purple-50 px-2 py-1 rounded-md">
+                        <div className="flex justify-between items-start mb-3">
+                          <span className="text-xs font-bold text-purple-600 bg-purple-50 px-2.5 py-1 rounded-lg">
                             {fortune.date}
                           </span>
                           <button 
                             onClick={() => removeFortune(fortune.id)}
-                            className="p-1.5 text-gray-300 hover:text-red-500 transition-colors rounded-full hover:bg-red-50"
+                            className="p-2 -mt-1 -mr-1 text-slate-300 hover:text-rose-500 transition-colors rounded-full hover:bg-rose-50"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
-                        <p className="text-gray-700 text-sm leading-relaxed">
+                        <p className="text-slate-700 text-sm leading-relaxed font-medium">
                           {fortune.text}
                         </p>
                       </motion.div>
@@ -317,25 +299,72 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      {/* Floating Circular Glass Navigation */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-64 h-16 rounded-full glass-nav flex items-center justify-around px-2 z-50">
-        <button
-          onClick={() => setActiveTab('home')}
-          className={`flex flex-col items-center justify-center w-14 h-14 rounded-full transition-all duration-300 ${
-            activeTab === 'home' ? 'bg-purple-600 text-white shadow-md' : 'text-purple-900 hover:bg-white/50'
-          }`}
-        >
-          <HomeIcon className="w-5 h-5" strokeWidth={activeTab === 'home' ? 2.5 : 2} />
-        </button>
-        
-        <button
-          onClick={() => setActiveTab('saved')}
-          className={`flex flex-col items-center justify-center w-14 h-14 rounded-full transition-all duration-300 ${
-            activeTab === 'saved' ? 'bg-purple-600 text-white shadow-md' : 'text-purple-900 hover:bg-white/50'
-          }`}
-        >
-          <Bookmark className="w-5 h-5" strokeWidth={activeTab === 'saved' ? 2.5 : 2} />
-        </button>
+      {/* Modern Bottom Install Prompt Banner */}
+      <AnimatePresence>
+        {showInstallPrompt && !isStandalone && (
+          <motion.div
+            initial={{ y: 150, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 150, opacity: 0 }}
+            className="absolute bottom-28 left-4 right-4 z-40 bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-100 p-5 overflow-hidden"
+          >
+            <button onClick={dismissInstallPrompt} className="absolute top-3 right-4 text-slate-400 hover:text-slate-600 text-lg p-1 font-sans">
+              ✕
+            </button>
+            <div className="flex items-center gap-4 mb-4 mt-1">
+              <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center shrink-0">
+                <Coffee className="w-6 h-6 text-purple-600" />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-900 leading-tight">Uygulamayı Yükle</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Daha hızlı ve çevrimdışı kullanım için</p>
+              </div>
+            </div>
+            
+            {inIframe ? (
+              <div className="bg-amber-50 rounded-xl p-3 text-xs text-amber-800 flex gap-2">
+                <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                <p>AI Studio önizlemesindeyken yüklenemez. Lütfen sağ üstten <b>Yeni Sekmede Aç</b> seçeneğine tıklayın.</p>
+              </div>
+            ) : (
+              <button
+                onClick={handleInstallClick}
+                className="w-full bg-purple-600 text-white font-bold text-sm py-3 rounded-xl hover:bg-purple-700 transition-colors shadow-sm"
+              >
+                Hemen Ekle
+              </button>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Floating Bottom Navigation */}
+      <div className="absolute bottom-[env(safe-area-inset-bottom)] left-0 right-0 p-6 z-50 pointer-events-none">
+        <div className="w-full max-w-[16rem] mx-auto h-16 rounded-full glass-nav flex items-center justify-around px-2 pointer-events-auto">
+          <button
+            onClick={() => setActiveTab('home')}
+            className={`flex flex-col items-center justify-center w-12 h-12 rounded-full transition-all duration-300 relative ${
+              activeTab === 'home' ? 'text-purple-700' : 'text-slate-400 hover:bg-white/50'
+            }`}
+          >
+            {activeTab === 'home' && (
+              <motion.div layoutId="nav-pill" className="absolute inset-0 bg-white rounded-full shadow-sm" />
+            )}
+            <HomeIcon className="w-[22px] h-[22px] relative z-10" strokeWidth={activeTab === 'home' ? 2.5 : 2} />
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('saved')}
+            className={`flex flex-col items-center justify-center w-12 h-12 rounded-full transition-all duration-300 relative ${
+              activeTab === 'saved' ? 'text-purple-700' : 'text-slate-400 hover:bg-white/50'
+            }`}
+          >
+            {activeTab === 'saved' && (
+              <motion.div layoutId="nav-pill" className="absolute inset-0 bg-white rounded-full shadow-sm" />
+            )}
+            <Bookmark className="w-[22px] h-[22px] relative z-10" strokeWidth={activeTab === 'saved' ? 2.5 : 2} />
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kahve-fali-cache-v9';
+const CACHE_NAME = 'kahve-fali-cache-v10';
 const urlsToCache = [
   '/',
   '/?utm_source=pwa',
