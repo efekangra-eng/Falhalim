@@ -107,8 +107,10 @@ export default function App() {
     saveToStorage(savedFortunes.filter(f => f.id !== id));
   };
 
+  const inIframe = window.self !== window.top;
+
   const handleInstallClick = async () => {
-    if (deferredPrompt) {
+    if (deferredPrompt && !inIframe) {
       // Show the install prompt
       deferredPrompt.prompt();
       
@@ -165,14 +167,24 @@ export default function App() {
                 <Download className="w-8 h-8" />
               </div>
               <h3 className="text-xl font-bold text-gray-900">Ana Ekrana Ekle</h3>
-              <p className="text-gray-600 text-sm leading-relaxed">
-                Uygulamayı cihazınıza yüklemek için:
-              </p>
-              <ul className="text-sm text-left text-gray-600 space-y-2 bg-gray-50 p-4 rounded-xl w-full">
-                <li><strong className="text-gray-800">🍎 iOS (Safari):</strong> Alt menüdeki <span className="inline-block border rounded px-1">Paylaş</span> butonuna basın ve <strong>"Ana Ekrana Ekle"</strong> seçeneğini seçin.</li>
-                <li><strong className="text-gray-800">🤖 Android (Chrome):</strong> Tarayıcı menüsünden <strong>"Ana Ekrana Ekle"</strong> seçeneğini seçin.</li>
-                <li><strong className="text-gray-800">⚠️ Not:</strong> AI Studio önizleme penceresindeyseniz, önce uygulamayı <strong>yeni bir sekmede açmalısınız.</strong></li>
-              </ul>
+              
+              {inIframe ? (
+                <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl text-sm text-left">
+                  <p className="font-semibold mb-2">⚠️ Önce tam ekrana geçin</p>
+                  <p>AI Studio önizlemesindeyken uygulama yüklenemez. Lütfen sağ üstteki <strong>"Yeni Sekmede Aç" (Open in new tab)</strong> veya <strong>"Paylaş" (Share)</strong> butonuna tıklayarak uygulamayı tarayıcıda tam sayfa olarak açın.</p>
+                </div>
+              ) : (
+                <>
+                  <p className="text-gray-600 text-sm leading-relaxed">
+                    Uygulamayı cihazınıza yüklemek için:
+                  </p>
+                  <ul className="text-sm text-left text-gray-600 space-y-2 bg-gray-50 p-4 rounded-xl w-full">
+                    <li><strong className="text-gray-800">🍎 iOS (Safari):</strong> Alt menüdeki <span className="inline-block border border-gray-300 rounded px-1">Paylaş</span> butonuna basın ve <strong>"Ana Ekrana Ekle"</strong> seçeneğini seçin.</li>
+                    <li><strong className="text-gray-800">🤖 Android (Chrome):</strong> Tarayıcı menüsünden (üç nokta) <strong>"Ana Ekrana Ekle"</strong> veya <strong>"Uygulamayı Yükle"</strong> seçeneğini seçin.</li>
+                  </ul>
+                </>
+              )}
+
               <button
                 onClick={() => setShowInstallModal(false)}
                 className="mt-2 w-full py-3 bg-purple-600 text-white font-medium rounded-xl hover:bg-purple-700 transition-colors"
